@@ -1,0 +1,27 @@
+#Recommendation System
+#You are given the list of Facebook friends and the list of Facebook pages that users follow. 
+#Your task is to create a new recommendation system for Facebook. 
+#For each Facebook user, find pages that this user doesn't follow but at least one of their friends does. 
+#Output the user ID and the ID of the page that should be recommended to this user.
+import pandas as pd
+
+# Start writing code
+users = pd.DataFrame(users_friends['user_id'].unique())
+all_pages = pd.DataFrame(users_pages['page_id'].unique())
+
+all_combo = users.merge(all_pages, how="cross").rename(columns={'0_x': 'user_id', '0_y': 'page_id'})
+
+friends_pages = users_friends.merge(users_pages,
+  left_on='friend_id', right_on='user_id', indicator = 'Indicator'
+ )[['user_id_x', 'page_id']].rename(columns={'user_id_x': 'user_id'}).drop_duplicates()
+ 
+df_filtered = all_combo.merge(users_pages[['user_id', 'page_id']].drop_duplicates(),
+ on=['user_id', 'page_id'],
+ how='left', indicator = 'Indicator'
+ )
+
+df_filtered = df_filtered.loc[df_filtered['Indicator'] == 'left_only']
+
+df_recommendation = df_filtered.merge(friends_pages,
+ on=['user_id', 'page_id'],
+ how='inner')[['user_id', 'page_id']]
