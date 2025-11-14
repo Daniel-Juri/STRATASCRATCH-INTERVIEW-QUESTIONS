@@ -1,0 +1,290 @@
+1. Recommendation System
+    You are given the list of Facebook friends and the list of Facebook pages that users follow. 
+    Your task is to create a new recommendation system for Facebook. 
+    For each Facebook user, find pages that this user doesn't follow but at least one of their friends does. 
+    Output the user ID and the ID of the page that should be recommended to this user.
+
+    Solution:
+    import pandas as pd
+
+    # Start writing code
+    users = pd.DataFrame(users_friends['user_id'].unique())
+    all_pages = pd.DataFrame(users_pages['page_id'].unique())
+
+    all_combo = users.merge(all_pages, how="cross").rename(columns={'0_x': 'user_id', '0_y': 'page_id'})
+
+    friends_pages = users_friends.merge(users_pages,
+      left_on='friend_id', right_on='user_id', indicator = 'Indicator'
+    )[['user_id_x', 'page_id']].rename(columns={'user_id_x': 'user_id'}).drop_duplicates()
+    
+    df_filtered = all_combo.merge(users_pages[['user_id', 'page_id']].drop_duplicates(),
+    on=['user_id', 'page_id'],
+    how='left', indicator = 'Indicator'
+    )
+
+    df_filtered = df_filtered.loc[df_filtered['Indicator'] == 'left_only']
+
+    df_recommendation = df_filtered.merge(friends_pages,
+    on=['user_id', 'page_id'],
+    how='inner')[['user_id', 'page_id']]
+
+
+2. Find all posts which were reacted to with a heart
+    Find all posts which were reacted to with a heart. 
+    For such posts output all columns from facebook_posts table.
+
+    Solution:
+    import pandas as pd
+    heart_reactions = facebook_reactions.loc[facebook_reactions['reaction'] == 'heart']
+
+    final_post = facebook_posts.merge(heart_reactions, on = ['post_id', 'poster'], how ='inner')[['post_id','poster', 'post_text', 'post_keywords', 'post_date']].drop_duplicates()
+
+3. Highest Cost Orders
+    Find the customers with the highest daily total order cost between 2019-02-01 and 2019-05-01. 
+    If a customer had more than one order on a certain day, sum the order costs on a daily basis. 
+    Output each customer's first name, total cost of their items, and the date. 
+    If multiple customers tie for the highest daily total on the same date, return all of them.
+
+    For simplicity, you can assume that every first name in the dataset is unique.
+
+    Solution:
+    import pandas as pd
+
+    filtered_date = orders[(orders['order_date'] >= '2019-02-01') & (orders['order_date'] <= '2019-05-01')]
+
+    sum_filtered_date = filtered_date.groupby(['cust_id', 'order_date'], as_index= False)['total_order_cost'].sum().reset_index()
+
+    max_per_date = sum_filtered_date.groupby(['order_date'], as_index= False)['total_order_cost'].max().reset_index()
+
+    max_customers_orders = max_per_date.merge(sum_filtered_date, on = ['order_date', 'total_order_cost'], how ='left')
+
+    Customer_orders = max_customers_orders.merge(customers, left_on = 'cust_id', right_on = 'id', how ='left')[['first_name', 'order_date', 'total_order_cost']]
+
+4. New Products
+    Calculate the net change in the number of products launched by companies in 2020 compared to 2019. 
+    Your output should include the company names and the net difference.
+    (Net difference = Number of products launched in 2020 - The number launched in 2019.)
+
+    Solution:
+    import pandas as pd
+
+    car_launches_2019 = car_launches[car_launches['year'] == 2019]
+    car_launches_2020 = car_launches[car_launches['year'] == 2020]
+
+    car_launches_2019_count = car_launches_2019.groupby('company_name')['product_name'].count().reset_index()
+
+    car_launches_2020_count = car_launches_2020.groupby('company_name')['product_name'].count().reset_index()
+
+    car_total_2019 = car_launches.merge(car_launches_2019_count, on='company_name', how= 'left')[['company_name', 'product_name_y']].drop_duplicates()
+
+    car_2019 = car_total_2019.groupby(['company_name'])['product_name_y'].sum().reset_index()
+
+    car_total_2020 = car_launches.merge(car_launches_2020_count, on='company_name', how= 'left')[['company_name', 'product_name_y']].drop_duplicates()
+
+    car_2020 = car_total_2020.groupby(['company_name'])['product_name_y'].sum().reset_index()
+
+    car_company_name = car_launches['company_name'].drop_duplicates()
+
+    car_final = car_2020.merge(car_2019, on=['company_name'], how='left')
+
+    car_final['net_new_products'] = car_final['product_name_y_x'] - car_final['product_name_y_y']
+
+    car_final[['company_name', 'net_new_products']]
+
+5. Find all inspections which are part of an inactive program
+    
+    Solution:
+    import pandas as pd
+
+    los_angeles_restaurant_health_inspections[los_angeles_restaurant_health_inspections['program_status'] == 'INACTIVE']
+
+6. Salaries Differences  
+    Calculates the difference between the highest salaries in the marketing and engineering departments. 
+    Output just the absolute difference in salaries.
+
+    Solution:
+    import pandas as pd
+
+    df = pd.merge(db_employee, db_dept, how = 'inner', left_on = 'department_id', right_on = 'id')
+    marketing= df.loc[df['department'] == 'marketing', 'salary'].max()
+    engineering = df.loc[df['department'] == 'engineering', 'salary'].max()
+
+    salary_difference = marketing - engineering
+
+7. Finding Updated Records
+    We have a table with employees and their salaries, however, some of the records are old and contain outdated salary information. 
+    Find the current salary of each employee assuming that salaries increase each year. 
+    Output their id, first name, last name, department ID, and current salary. 
+    Order your list by employee ID in ascending order.
+
+    Solution:
+    import pandas as pd
+
+    max_employee_salary = ms_employee_salary.groupby(['id'], as_index= False)['salary'].max()
+
+    max_employee_salary.merge(ms_employee_salary, on=['id', 'salary'], how='inner')
+
+8. Abigail Breslin Nominations
+    Count the number of movies for which Abigail Breslin was nominated for an Oscar.
+
+    Solution:
+    import pandas as pd
+    oscar_nominees.head()
+
+    abigail_df = oscar_nominees[oscar_nominees['nominee'] == 'Abigail Breslin']
+    Count_df = abigail_df['id'].nunique()
+
+9. Aroma-based Winery Search.
+    Find wineries producing wines with aromas of plum, cherry, rose, or hazelnut (singular form only). 
+    To make things simpler, exclude any wine descriptions that contain the plural forms (ex. cherries).
+
+    Solution:
+    import pandas as pd
+    recipe = ['cherry', 'rose', 'hazelnut']
+            
+    mask = winemag_p1['description'].str.contains('|'.join(recipe), case=False)
+    print(winemag_p1.loc[mask, 'winery'])
+
+10. Number of Comments Per User in 30 days before 2020-02-10
+      Return the total number of comments received for each user in the 30-day period up to and including 2020-02-10. 
+      Don't output users who haven't received any comment in the defined time period.
+
+      Solution:
+      import pandas as pd
+      fb_comments_count.head()
+
+      filtered_date = fb_comments_count[(fb_comments_count['created_at'] <= '2020-02-10')]
+      User_comments_count = filtered_date.groupby(['user_id'], as_index= False)['number_of_comments'].sum()
+
+11. Captain Base Pay
+      Find the base pay for Police Captains.
+      Output the employee name along with the corresponding base pay.
+
+      Solution:
+      import pandas as pd
+      df_captains = sf_public_salaries[sf_public_salaries['jobtitle'].str.contains('Captain', case=False, na=False)]
+
+      df_captains[['employeename', 'basepay']]
+
+12. Users By Average Session Time
+      Calculate each user's average session time, where a session is defined as the time difference between a page_load and a page_exit. 
+      Assume each user has only one session per day. 
+      If there are multiple page_load or page_exit events on the same day, use only the latest page_load and the earliest page_exit. 
+      Only consider sessions where the page_load occurs before the page_exit on the same day. 
+      Output the user_id and their average session time.
+
+      Solution:
+      import pandas as pd
+
+      page_load = facebook_web_log[facebook_web_log['action'] == 'page_load'].sort_values(by='timestamp')
+      page_load['date_only'] = page_load['timestamp'].dt.floor('d')
+      page_load_users = page_load.groupby(['user_id', 'date_only'], as_index=False)['timestamp'].max()
+
+      page_exit = facebook_web_log[facebook_web_log['action'] == 'page_exit'].sort_values(by='timestamp')
+      page_exit['date_only'] = page_exit['timestamp'].dt.floor('d')
+      page_exit_users = page_exit.groupby(['user_id', 'date_only'], as_index=False)['timestamp'].min()
+
+      user_session = page_load_users.merge(page_exit_users, how = 'left', on = ['user_id','date_only'])
+
+      user_session['avg_session_duration'] = user_session['timestamp_y'] - user_session['timestamp_x']
+
+      user_session.groupby(['user_id'], as_index=False)['avg_session_duration'].mean().dropna()
+
+13. Acceptance Rate By Date
+      Calculate the friend acceptance rate for each date when friend requests were sent. 
+      A request is sent if action = sent and accepted if action = accepted. 
+      If a request is not accepted, there is no record of it being accepted in the table.
+      The output will only include dates where requests were sent and at least one of them was accepted (acceptance can occur on any date after the request is sent).
+
+      Solution:
+      import pandas as pd
+      
+      sent = fb_friend_requests[fb_friend_requests['action'] == 'sent']
+      accepted = fb_friend_requests[fb_friend_requests['action'] == 'accepted']
+
+      request = sent.merge(accepted, how = 'left', on = ['user_id_sender','user_id_receiver'])
+      date_sent = request.groupby('date_x', as_index=False)['action_x'].count()
+      date_accepted = request.groupby('date_x', as_index=False)['action_y'].count()
+
+      dates_request = date_sent.merge(date_accepted, how = 'left', on = ['date_x'])
+      dates_request['acceptance_rate'] = dates_request['action_y'] / dates_request['action_x']
+      dates_request[['date_x', 'acceptance_rate']]
+
+
+14. Finding User Purchases
+      Identify returning active users by finding users who made a second purchase within 1 to 7 days after their first purchase. 
+      Ignore same-day purchases. 
+      Output a list of these user_ids.
+      
+      Solution:
+      import pandas as pd
+
+      amazon = amazon_transactions[['user_id', 'created_at']].drop_duplicates().sort_values(by=['user_id', 'created_at'])
+
+      amazon['rank'] = amazon.groupby('user_id')['created_at'].rank(method='dense', ascending=True)
+
+      amazon_first_order = amazon[amazon['rank'] == 1]
+      amazon_second_order = amazon[amazon['rank'] == 2]
+
+      amazon_sequential_purchase = amazon_first_order.merge(amazon_second_order, how = 'left', on = 'user_id')
+      amazon_sequential_purchase['amazon_purchase_difference'] = amazon_sequential_purchase['created_at_y'] - amazon_sequential_purchase['created_at_x']
+      amazon_sequential_purchase['amazon_purchase_difference'] = amazon_sequential_purchase['amazon_purchase_difference'].dt.days
+      amazon_returning_customers = amazon_sequential_purchase[amazon_sequential_purchase['amazon_purchase_difference'] <= 7]
+      amazon_returning_customers['user_id']
+
+15. Submission Types
+      Write a query that returns the user ID of all users that have created at least one ‘Refinance’ submission and at least one ‘InSchool’ submission.
+
+      Solution:
+      import pandas as pd
+
+      df = loans
+      filtered_df_Ref = df.loc[(df['type'] == 'Refinance')]['user_id'].drop_duplicates().reset_index()
+      filtered_df_Sch = df.loc[(df['type'] == 'InSchool')]['user_id'].drop_duplicates().reset_index()
+      filtered_df = filtered_df_Ref.merge(filtered_df_Sch, how = 'inner', on = 'user_id')['user_id']
+
+16. Total Cost Of Orders
+      Find the total cost of each customer's orders. 
+      Output customer's id, first name, and the total order cost. 
+      Order records by customer's first name alphabetically.
+
+      Solution:
+      import pandas as pd
+
+      full_table = orders.merge(customers, how = 'left', left_on ='cust_id', right_on ='id')
+      full_table.groupby(['cust_id', 'first_name'], as_index=False)['total_order_cost'].sum()
+
+17. Workers With The Highest Salaries
+      Management wants to analyze only employees with official job titles. 
+      Find the job titles of the employees with the highest salary. 
+      If multiple employees have the same highest salary, include all their job titles.
+
+      Solution:
+      import pandas as pd
+
+      df = title.rename(columns={'worker_ref_id': 'worker_id'})
+      df1 = pd.merge(worker, df, how = 'inner', on='worker_id')
+      df2 = df1[df1['salary'] == df1['salary'].max()][['worker_title']]
+
+      df3 = df2.head()
+
+18. Email Preference Missing
+      Find libraries from the 2016 circulation year that have no email address provided but have their notice preference set to email. 
+      In your solution, output their home library code.
+
+      Solution:
+      import pandas as pd
+
+      library_usage[(library_usage['circulation_active_year'] == 2016) &
+      (library_usage['provided_email_address'] == False) &
+      (library_usage['notice_preference_definition'] == 'email')]['home_library_code'].drop_duplicates()
+
+19. Bikes Last Used
+      Find the last time each bike was in use. Output both the bike number and the date-timestamp of the bike's last use (i.e., the date-time the bike was returned). 
+      Order the results by bikes that were most recently used.
+
+      Solution:
+      import pandas as pd
+
+      dc_bikeshare_q1_2012.groupby(['bike_number'], as_index=False)['end_time'].max().sort_values('end_time', ascending=False).drop_duplicates()
+
